@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Market Backtesting</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+
+<div class="container">
+    <h1>Stock Market Backtesting</h1>
+
+    <div class="input-group">
+        <label for="stock-symbol">Enter Stock Symbol:</label>
+        <input type="text" id="stock-symbol" placeholder="e.g., AAPL">
+        <label for="start-date">Start Date:</label>
+        <input type="date" id="start-date">
+        <label for="end-date">End Date:</label>
+        <input type="date" id="end-date">
+        <label for="interval">Interval:</label>
+        <select id="interval">
+            <option value="1d">1 Day</option>
+            <option value="1h">1 Hour</option>
+            <option value="15m">15 Minutes</option>
+            <option value="5m">5 Minutes</option>
+            <option value="1m">1 Minute</option>
+        </select>
+        <button id="fetch-data">Fetch Data</button>
+    </div>
+
+    <div id="chart-container" style="width: 100%; height: 500px;">
+        <canvas id="stockChart"></canvas>
+    </div>
+
+    <!-- Table to display OHLC and Volume -->
+    <div id="data-table-container">
+        <h2>Stock Data (OHLC and Volume)</h2>
+        <table id="ohlc-table"  cellpadding="5">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Open</th>
+                    <th>High</th>
+                    <th>Low</th>
+                    <th>Close</th>
+                    <th>Volume</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Table rows will be inserted dynamically here -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@1.2.0"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function() {
+        let stockChart;
+
+        $('#fetch-data').on('click', function() {
+            const symbol = $('#stock-symbol').val().toUpperCase();
+            const startDate = $('#start-date').val();
+            const endDate = $('#end-date').val();
+            const interval = $('#interval').val();
+
+            if (!symbol || !startDate || !endDate) {
+                alert("Please enter a stock symbol, date range, and interval.");
+                return;
+            }
+
+            $.post('/get_data', { symbol: symbol, start_date: startDate, end_date: endDate, interval: interval }, function(data) {
+                if (data.error) {
+                    alert("Error: " + data.error);
+                    return;
+                }
+
+                const ctx = document.getElementById('stockChart').getContext('2d');
+                const chartData = data.chart_data;
+
+                // Destroy previous chart if it exists
+                if (stockChart) {
+                    stockChart.destroy();
+                }
+
+                stockChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: chartData.dates,
+                        datasets: [
+                        {
+                            label: 'Close Price',
+                            data: chartData.close,
+                            borderColor: 'rgba(0, 123, 255, 1)',
+                            backgroundColor: 'rgba(0, 123, 255, 0.2)',
+                            yAxisID: 'y-price',
+                        },
+                        {
+                            label: 'Supertrend (7,3)',
+                            data: chartData.supertrend_7_3,
+                            borderColor: 'rgba(255, 0, 0, 1)',
+                            borderWidth: 2,
+                            yAxisID: 'y-price',
+                        },
+                        {
+                            label: 'Supertrend (10,3)',
+                            data: chartData.supertrend_10_3,
+                            borderColor: 'rgba(0, 255, 0, 1)',
+                            borderWidth: 2,
+                            yAxisID: 'y-price',
+                        },
+                        {
+                            label: 'Supertrend (11,2)',
+                            data: chartData.supertrend_11_2,
+                            borderColor: 'rgba(0, 0, 255, 1)',
+                            borderWidth: 2,
+                            yAxisID: 'y-price',
+                        },
+                        {
+                            label: 'Volume',
+                            data: chartData.volume,
+                            type: 'bar',  // Display volume as a bar chart
+                            backgroundColor: 'rgba(90, 200, 0, 0.5)',
+                            borderColor: 'rgba(20, 0, 100, 0.5)',
+                            yAxisID: 'y-volume',
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            yAxes: [
+                            {
+                                id: 'y-price',
+                                type: 'linear',
+                                position: 'left',
+                                ticks: {
+                                    beginAtZero: false
+                                },
+                                scaleLabel: {
+                                    display: true,
+                                    labelString: 'Price'
+                                }
+                            },
+                            {
+                                id: 'y-volume',
+                                type: 'linear',
+                                position: 'right',
+                                ticks: {
+                                    beginAtZero: true
+                                },
+                                scaleLabel: {
+                                    display: true,
+                                    labelString: 'Volume'
+                                },
+                                gridLines: {
+                                    drawOnChartArea: false  // Only show grid lines for the price axis
+                                }
+                            }],
+                        },
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            zoom: {
+                                pan: {
+                                    enabled: true,
+                                    mode: 'x',
+                                },
+                                zoom: {
+                                    enabled: true,
+                                    mode: 'x',
+                                    speed: 0.1,
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // Update OHLC Table
+                updateOHLCTable(chartData);
+            }).fail(function(jqXHR, textStatus, errorThrown) {
+                alert("Request failed: " + textStatus);
+            });
+        });
+
+        function updateOHLCTable(chartData) {
+            const tbody = $('#ohlc-table tbody');
+            tbody.empty();  // Clear any existing rows
+
+            chartData.dates.forEach(function(date, index) {
+                const open = chartData.open[index];
+                const high = chartData.high[index];
+                const low = chartData.low[index];
+                const close = chartData.close[index];
+                const volume = chartData.volume[index];
+
+                const row = `
+                    <tr>
+                        <td>${date}</td>
+                        <td>${open}</td>
+                        <td>${high}</td>
+                        <td>${low}</td>
+                        <td>${close}</td>
+                        <td>${volume}</td>
+                    </tr>
+                `;
+
+                tbody.append(row);
+            });
+        }
+    });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,95 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    color: #333;
+    padding: 20px;
+}
+
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    background-color: #fff;
+    padding: 20px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.input-group {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.input-group input {
+    padding: 10px;
+    width: 200px;
+    margin-right: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.input-group button {
+    padding: 10px 20px;
+    background-color: #28a745;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.input-group button:hover {
+    background-color: #218838;
+}
+
+#stock-info {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+#stock-info p {
+    margin: 5px 0;
+}
+
+#chart-container {
+    text-align: center;
+    
+}
+
+
+#chart-container {
+    text-align: center;
+ 
+
+
+} 
+
+#stock-chart {
+    max-width: 100%;
+    height: auto;
+}
+
+
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+}
+.data-table th, .data-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: center;
+}
+.data-table th {
+    background-color: #a9a1a1;
+}
+.data-table td {
+    background-color: #cb4646;
+}
+.data-table caption {
+    font-weight: bold;
+    margin-bottom: 10px;
+}
